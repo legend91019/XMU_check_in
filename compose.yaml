@@ -1,0 +1,13 @@
+services:
+  attendance:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:7321:7321"
+    volumes:
+      - attendance-data:/data
+    environment:
+      XMU_ROOT_PATH: ${XMU_ROOT_PATH:-}
+    command: ["python", "-m", "uvicorn", "xmu.web:create_app", "--factory", "--host", "0.0.0.0", "--port", "7321", "--root-path", "${XMU_ROOT_PATH:-}"]
+volumes:
+  attendance-data:

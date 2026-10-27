@@ -1,0 +1,51 @@
+"""Headless UI checks against synthetic fixtures on localhost:7322."""
+from pathlib import Path
+from playwright.sync_api import sync_playwright, expect
+
+out = Path(__file__).resolve().parents[1]/'test-results'/'screenshots'
+out.mkdir(parents=True, exist_ok=True)
+with sync_playwright() as p:
+    browser = p.chromium.launch(headless=True, channel='chrome')
+    page = browser.new_page(viewport={'width': 1400, 'height': 1000})
+    errors = []
+    page.on('pageerror', lambda e: errors.append(str(e)))
+    page.goto('http://127.0.0.1:7322/')
+    page.wait_for_load_state('networkidle')
+    expect(page.get_by_role('heading', name='课程考勤簿')).to_be_visible()
+    page.locator('#admin-password').fill('ui-fixture-password')
+    page.get_by_role('button', name='打开考勤簿').click()
+    expect(page.locator('#app')).to_be_visible()
+    expect(page.locator('#courses .course-row:not(.heading)')).to_have_count(2)
+    expect(page.locator('.semester-group')).to_have_count(1)
+    assert not page.locator('.semester-group').evaluate('(e)=>e.open')
+    page.locator('.semester-group > summary').click()
+    expect(page.get_by_role('button', name='高等数学，缺勤 0 次，查看明细')).to_be_visible()
+    page.locator('.semester-group > summary').click()
+    page.screenshot(path=str(out/'desktop-synthetic.png'), full_page=True)
+    page.get_by_role('button', name='电磁学，缺勤 2 次，查看明细').click()
+    expect(page.locator('#course-dialog')).to_be_visible()
+    expect(page.locator('#detail-records .record')).to_have_count(6)
+    page.locator('#detail-filter').select_option('absent')
+    expect(page.locator('#detail-records .record')).to_have_count(2)
+    page.locator('#course-dialog .close-dialog').click()
+    page.locator('#search').fill('高等数学')
+    expect(page.get_by_role('button', name='高等数学，缺勤 0 次，查看明细')).to_be_visible()
+    assert page.locator('.semester-group').evaluate('(e)=>e.open')
+    page.locator('#search').fill('')
+    page.locator('#open-strategy').click()
+    page.locator('#poll-interval').fill('45')
+    page.locator('#wait-for-count').fill('10')
+    page.get_by_role('button', name='保存策略').click()
+    expect(page.locator('#strategy-dialog')).not_to_be_visible()
+    expect(page.locator('#wait-policy')).to_contain_text('10')
+    page.set_viewport_size({'width': 390, 'height': 844})
+    page.screenshot(path=str(out/'mobile-synthetic.png'), full_page=True)
+    assert page.evaluate('document.documentElement.scrollWidth <= innerWidth'), 'horizontal overflow'
+    page.get_by_role('button', name='账号设置').click()
+    expect(page.locator('#account-dialog')).to_be_visible()
+    page.locator('#account-dialog .close-dialog').click()
+    page.get_by_role('button', name='退出', exact=True).click()
+    expect(page.locator('#unlock')).to_be_visible()
+    assert errors == [], errors
+    browser.close()
+print('UI checks passed: login, courses, details, status filter, search, strategy, mobile, logout; synthetic data only.')

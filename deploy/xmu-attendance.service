@@ -1,0 +1,28 @@
+[Unit]
+Description=XMU course attendance monitor
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+User=xmu-attendance
+Group=xmu-attendance
+WorkingDirectory=/opt/xmu-attendance
+Environment=PYTHONUNBUFFERED=1
+Environment=XMU_DATA_DIR=/var/lib/xmu-attendance
+Environment=XMU_ROOT_PATH=
+EnvironmentFile=-/etc/xmu-attendance.env
+ExecStart=/opt/xmu-attendance/.venv/bin/python -m uvicorn xmu.web:create_app --factory --host 127.0.0.1 --port 7321 --proxy-headers --forwarded-allow-ips 127.0.0.1 --root-path ${XMU_ROOT_PATH}
+Restart=always
+RestartSec=10
+TimeoutStopSec=30
+StateDirectory=xmu-attendance
+StateDirectoryMode=0700
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target

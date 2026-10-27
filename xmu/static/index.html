@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#123956"><title>厦大 · 课程考勤簿</title>
+  <link rel="stylesheet" href="static/style.css"><script defer src="static/app.js"></script>
+</head>
+<body>
+  <div id="unlock" class="gate">
+    <form id="unlock-form" class="gate-card">
+      <div class="brand-mark" aria-hidden="true">厦</div><div class="eyebrow">XMU / 课程与出勤</div>
+      <h1>课程考勤簿</h1><p class="muted">每一门课，每一次出勤。</p>
+      <label for="admin-password">管理密码</label><input id="admin-password" type="password" autocomplete="current-password" required>
+      <button class="primary" type="submit">打开考勤簿 <span aria-hidden="true">→</span></button>
+      <p id="unlock-error" class="error" role="alert"></p><p class="small muted">这是服务的管理密码，与学校账号密码不同。</p>
+    </form>
+  </div>
+  <div id="app" hidden>
+    <header class="topbar"><a class="wordmark" href="./"><span class="brand-mark" aria-hidden="true">厦</span><span>课程考勤簿</span></a><div class="top-actions"><span id="connection" class="connection">尚未连接</span><button id="open-account" class="text-button">账号设置</button><button id="logout" class="text-button">退出</button></div></header>
+    <main>
+      <section class="intro"><div><div class="eyebrow">我的课程 / 出勤记录</div><h1>把出勤情况，<br class="mobile-break">看清楚。</h1><p id="intro-copy" class="muted">登录学校账号后，在这里查看每门课的签到记录。</p></div><div class="intro-control"><span id="monitor-label" class="small muted">自动签到已暂停</span><button id="toggle-monitor" class="primary">启动监控</button></div></section>
+      <div id="notice" class="notice" role="status" hidden></div>
+      <section class="monitor-panel" aria-labelledby="monitor-title"><div class="panel-title"><h2 id="monitor-title">签到监控</h2><span id="last-poll" class="small muted">尚未检查</span></div><div class="monitor-options"><label class="check"><input type="checkbox" id="auto-number">数字签到</label><label class="check"><input type="checkbox" id="auto-radar">雷达签到</label><span class="small muted">二维码签到仅提醒</span><button id="open-strategy" class="text-button">调整策略 →</button></div><p id="wait-policy" class="small muted">等待其他 10 人签到后自动提交</p><div id="active-events" class="active-events"></div></section>
+      <section aria-labelledby="courses-title"><div class="section-head"><div><h2 id="courses-title">本学期课程</h2><p id="current-semester" class="small muted"></p><p id="last-sync" class="small muted">尚未同步</p></div><div class="course-controls"><label class="search"><span aria-hidden="true">⌕</span><input id="search" aria-label="搜索课程" placeholder="搜索所有学期"></label><button id="sync" class="secondary">同步记录</button></div></div><div id="totals" class="totals"></div><div id="courses" class="course-list"></div><div id="empty" class="empty" hidden><div class="empty-icon" aria-hidden="true">▤</div><h3>还没有课程记录</h3><p class="muted">先连接学校账号，再同步课程与签到历史。</p><button id="empty-account" class="secondary">连接学校账号</button></div><div id="semester-history" class="semester-history"></div></section>
+      <details class="log-panel"><summary>运行记录 <span class="muted small">查看近期检查与提交结果</span></summary><div id="logs"></div></details>
+      <footer>厦大 · 课程考勤簿 <span>统计以平台返回的本人记录为准，未知状态单独列出。</span></footer>
+    </main>
+  </div>
+  <dialog id="account-dialog"><form id="account-form"><div class="dialog-head"><h2>连接学校账号</h2><button type="button" class="icon-button close-dialog" aria-label="关闭">×</button></div><p class="muted small">使用厦大统一身份认证账号。登录信息仅保存在你的服务器上。</p><label for="school-user">学号 / 账号</label><input id="school-user" autocomplete="username"><label for="school-password">学校密码</label><input id="school-password" type="password" autocomplete="current-password"><details class="cookie-details"><summary>使用已有 Cookie 登录</summary><p class="muted small">遇到验证码时，可在浏览器登录课程网站后，从开发者工具中复制 lnt.xmu.edu.cn 请求的 Cookie 请求头。</p><label for="school-cookie">课程平台 Cookie</label><textarea id="school-cookie" rows="3" autocomplete="off" spellcheck="false"></textarea></details><p id="account-error" class="error" role="alert"></p><button class="primary wide" type="submit">登录并同步课程</button></form></dialog>
+  <dialog id="strategy-dialog"><form id="strategy-form"><div class="dialog-head"><h2>签到策略</h2><button type="button" class="icon-button close-dialog" aria-label="关闭">×</button></div><label for="wait-for-count">等待多少名其他同学签到</label><input id="wait-for-count" type="number" min="0" max="5000" required><p class="small muted">达到人数后才提交；人数不足或无法核实时继续等待。设为 0 则不等待。</p><label for="poll-interval">检查间隔（秒）</label><input id="poll-interval" type="number" min="15" max="600" required><label for="history-hours">历史同步间隔（小时）</label><input id="history-hours" type="number" min="1" max="24" required><label for="radar-mode">雷达签到位置</label><select id="radar-mode"><option value="adaptive">沿用 APK 的自动位置处理</option><option value="fixed">使用指定位置</option></select><div class="two-columns"><div><label for="latitude">纬度</label><input id="latitude" type="number" min="-90" max="90" step="any"></div><div><label for="longitude">经度</label><input id="longitude" type="number" min="-180" max="180" step="any"></div></div><p class="small muted">提交后会回查本人记录；结果未确认时暂不重复提交。</p><p id="strategy-error" class="error" role="alert"></p><button class="primary wide" type="submit">保存策略</button></form></dialog>
+  <dialog id="course-dialog" class="course-dialog"><div class="dialog-head"><div><div class="eyebrow">课程 / 考勤明细</div><h2 id="detail-name"></h2></div><button class="icon-button close-dialog" aria-label="关闭">×</button></div><p id="detail-notice" class="notice small" hidden></p><div id="detail-totals" class="totals"></div><div class="detail-toolbar"><span id="detail-count" class="small muted"></span><label>筛选状态 <select id="detail-filter"><option value="all">全部记录</option><option value="absent">缺勤</option><option value="present">已签到</option><option value="late">迟到</option><option value="leave">请假</option><option value="pending">待签到</option><option value="unknown">未知</option></select></label></div><div id="detail-records" class="records"></div></dialog>
+  <div id="toast" class="toast" role="status" hidden></div>
+</body></html>
